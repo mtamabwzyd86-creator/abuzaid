@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1f1b1c">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="أبو زيد">
 <title>مطاعم أبو زيد</title>
@@ -147,6 +150,24 @@ body.browse .step,body.browse .add{display:none}
 .soldout{position:absolute;top:calc(50% - 0px);left:50%;transform:translate(-50%,-50%);z-index:3;display:none;background:var(--ink);color:var(--yellow);font-weight:700;font-size:14px;padding:7px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.25)}
 .card.off .soldout{display:block;top:25%}
 .card.off .add{background:#9b948a}
+.plist{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:2px 14px;margin-top:12px;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+.grid + .plist{margin-top:12px}
+.prow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.prow:last-child{border-bottom:0}
+.prow .pn{flex:1;min-width:0}
+.prow .pn b{display:block;font-size:15px;font-weight:700;line-height:1.4}
+.prow .pn .tag2{display:inline-block;background:var(--yellow);color:var(--ink);font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:6px;margin-top:3px}
+.prow .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.prow .chips .opt{flex-direction:row;gap:5px;padding:3px 9px;border-radius:999px}
+.prow .chips .opt span{font-size:11.5px}
+.prow .chips .opt b{font-size:12.5px}
+.prow .pp{font-weight:700;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.prow .padd{width:38px;height:38px;flex-shrink:0;border-radius:12px;border:0;background:var(--ink);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;transition:background .2s,color .2s}
+.prow .padd.done{background:var(--yellow);color:var(--ink);font-size:16px}
+.prow.off{opacity:.5;filter:grayscale(1)}
+.prow.off .padd{display:none}
+.prow .offl{font-size:11.5px;font-weight:700;color:var(--muted)}
+body.browse .prow .padd{display:none}
 .none{text-align:center;color:var(--muted);padding:40px 0}
 
 /* زر واتساب العايم وشريط إتمام الطلب */
@@ -479,11 +500,23 @@ function cardHTML(it){
       <button class="add" type="button" data-add="${it.id}">إضافة للسلة</button>
     </div></article>`;
 }
+function rowHTML(it){
+  if(chosen[it.id]==null || !it.opts[chosen[it.id]]) chosen[it.id]=0;
+  const k = chosen[it.id], multi = it.opts.length>1;
+  const price = multi ? "" : `<span class="pp">${mh(it.opts[0].p)}</span>`;
+  const chips = multi ? `<div class="chips">${it.opts.map((o,j)=>`<button type="button" class="opt${j===k?" on":""}" data-item="${it.id}" data-opt="${j}"><span>${esc(o.l)}</span><b>${mh(o.p)}</b></button>`).join("")}</div>` : (it.opts[0].l?`<div class="chips"><span class="opt on" style="cursor:default"><span>${esc(it.opts[0].l)}</span></span></div>`:"");
+  return `<div class="prow${it.off?" off":""}" data-card="${it.id}" data-s="${esc((it.name+" "+it.cat).toLowerCase())}">
+    <div class="pn"><b>${esc(it.name)}</b>${it.note?`<span class="tag2">${esc(it.note)}</span>`:""}${it.off?`<span class="offl">غير متوفر حالياً</span>`:""}${chips}</div>
+    ${price}
+    <button type="button" class="padd" data-padd="${it.id}" aria-label="إضافة ${esc(it.name)}">+</button>
+  </div>`;
+}
 function renderMenu(){
   $("tabs").innerHTML = CATS.map((c,i)=>`<button class="tab${i?"":" on"}" type="button" data-go="${i}"><span class="em">${catEmoji(c)}</span>${esc(catLabel(c))}</button>`).join("");
   $("menu").innerHTML = CATS.map((c,i)=>`<section class="sec" id="s-${i}" data-cat="${i}">
     <div class="sec-h"><h2>${catEmoji(c)} ${esc(catLabel(c))}</h2></div>
-    <div class="grid">${ITEMS.filter(it=>it.cat===c).map(cardHTML).join("")}</div></section>`).join("")
+    ${(()=>{ const all=ITEMS.filter(it=>it.cat===c), pics=all.filter(it=>!it.plain), plain=all.filter(it=>it.plain);
+      return (pics.length?`<div class="grid">${pics.map(cardHTML).join("")}</div>`:"") + (plain.length?`<div class="plist">${plain.map(rowHTML).join("")}</div>`:""); })()}</section>`).join("")
     + `<div class="none" id="none" hidden>ما لقينا شي بهالاسم 🔍</div>`;
   spy.disconnect();
   document.querySelectorAll(".sec").forEach(s=>spy.observe(s));
@@ -530,7 +563,7 @@ $("q").addEventListener("input",()=>{
   let any=false;
   document.querySelectorAll(".sec").forEach(sec=>{
     let n=0;
-    sec.querySelectorAll(".card").forEach(c=>{ const ok=!q||c.dataset.s.includes(q); c.hidden=!ok; if(ok) n++; });
+    sec.querySelectorAll(".card,.prow").forEach(c=>{ const ok=!q||c.dataset.s.includes(q); c.hidden=!ok; if(ok) n++; });
     sec.hidden = !n; if(n) any=true;
   });
   if($("none")) $("none").hidden = any;
@@ -546,6 +579,16 @@ $("menu").addEventListener("click",e=>{
   if(qi||qd){ const id=(qi||qd).dataset[qi?"qi":"qd"]; qtySel[id]=Math.max(1,Math.min(50,qtySel[id]+(qi?1:-1))); $("q-"+id).textContent=qtySel[id]; return; }
   const z=e.target.closest("[data-zoom]");
   if(z){ if(!z.classList.contains("soon")) openZoom(ITEMS.find(i=>i.id==z.dataset.zoom)); return; }
+  const pa=e.target.closest("[data-padd]");
+  if(pa){
+    const it = ITEMS.find(i=>i.id==pa.dataset.padd);
+    if(!it || it.off) return;
+    const key=pa.dataset.padd+"|"+(chosen[pa.dataset.padd]||0);
+    cart.set(key,(cart.get(key)||0)+1);
+    pa.textContent="✓"; pa.classList.add("done");
+    setTimeout(()=>{pa.textContent="+";pa.classList.remove("done")},800);
+    refresh(); return;
+  }
   const a=e.target.closest("[data-add]");
   if(a){
     const it = ITEMS.find(i=>i.id==a.dataset.add);
@@ -650,7 +693,7 @@ $("send").addEventListener("click", async ()=>{
     clearTimeout(tm);
     const d = await r.json();
     if(d.ok){ no = d.no; lines = d.lines; tot = d.total; }
-    else if(d.error){ $("err").textContent = d.error; sending=false; btn.innerHTML=old; btn.disabled=false; return; }
+    else if(d.error && /^(اكتب|ما في أصناف|الأصناف المطلوبة)/.test(d.error)){ $("err").textContent = d.error; sending=false; btn.innerHTML=old; btn.disabled=false; return; }
   }catch(e){ /* إذا السيرفر ما رد، بيروح الطلب على واتساب بكل الأحوال */ }
   const url = "https://wa.me/"+SETTINGS.delivery+"?text="+encodeURIComponent(message(no, lines, tot));
   cart.clear(); refresh(); closeSheet();

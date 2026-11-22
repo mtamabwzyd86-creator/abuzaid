@@ -1,6 +1,6 @@
 // مطاعم أبو زيد — Service Worker (تثبيت كتطبيق + فتح أسرع)
-const VERSION = 'abuzaid-v1';
-const SHELL = ['./', './index.html', './logo.webp', './logo-chef.webp', './icon-192.png', './icon-512.png', './manifest.json'];
+const VERSION = 'abuzaid-v2';
+const SHELL = ['./', './index.html', './logo.webp', './logo-chef.webp', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
